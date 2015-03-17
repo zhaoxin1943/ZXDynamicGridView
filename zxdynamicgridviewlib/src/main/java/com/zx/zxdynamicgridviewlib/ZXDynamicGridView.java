@@ -486,35 +486,35 @@ public class ZXDynamicGridView extends GridView {
                     animatorArrayList.add(createTranslationAnimations(view, -view.getWidth(), 0, 0, 0));
                 }
             }
-            AnimatorSet animatorSet = new AnimatorSet();
-            animatorSet.playTogether(animatorArrayList);
-            animatorSet.setInterpolator(new AccelerateDecelerateInterpolator());
-            animatorSet.setDuration(MOVE_DURATION);
-            animatorSet.addListener(new Animator.AnimatorListener() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-                    mReorderAnimation = true;
-                    updateEnableState();
-                }
-
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    mReorderAnimation = false;
-                    updateEnableState();
-                }
-
-                @Override
-                public void onAnimationCancel(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationRepeat(Animator animation) {
-
-                }
-            });
-            animatorSet.start();
         }
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.playTogether(animatorArrayList);
+        animatorSet.setInterpolator(new AccelerateDecelerateInterpolator());
+        animatorSet.setDuration(MOVE_DURATION);
+        animatorSet.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                mReorderAnimation = true;
+                updateEnableState();
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                mReorderAnimation = false;
+                updateEnableState();
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
+        animatorSet.start();
     }
 
     private void updateEnableState() {

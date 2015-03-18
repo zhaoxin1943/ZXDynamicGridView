@@ -26,6 +26,12 @@ public class MainActivity extends ActionBarActivity {
 
     private ZXDynamicGridView dynamic_grid_view;
     private Integer[] picIds = {R.mipmap.pic1, R.mipmap.pic2, R.mipmap.pic3, R.mipmap.pic4,
+            R.mipmap.pic5, R.mipmap.pic6, R.mipmap.pic7, R.mipmap.pic8,
+            R.mipmap.pic1, R.mipmap.pic2, R.mipmap.pic3, R.mipmap.pic4,
+            R.mipmap.pic5, R.mipmap.pic6, R.mipmap.pic7, R.mipmap.pic8,
+            R.mipmap.pic1, R.mipmap.pic2, R.mipmap.pic3, R.mipmap.pic4,
+            R.mipmap.pic5, R.mipmap.pic6, R.mipmap.pic7, R.mipmap.pic8,
+            R.mipmap.pic1, R.mipmap.pic2, R.mipmap.pic3, R.mipmap.pic4,
             R.mipmap.pic5, R.mipmap.pic6, R.mipmap.pic7, R.mipmap.pic8};
     private List<Integer> picIdList = Arrays.asList(picIds);
     private TestAdapter testAdapter;

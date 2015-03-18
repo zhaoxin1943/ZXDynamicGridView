@@ -17,6 +17,7 @@ import android.os.Build;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -24,6 +25,7 @@ import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
+import android.widget.AbsListView;
 import android.widget.GridView;
 
 import java.util.ArrayList;
@@ -61,6 +63,8 @@ public class ZXDynamicGridView extends GridView {
     private boolean mIsMobileScrolling;
     private boolean mIsWaitingForScrollFinish = false;
     private int mScrollState = OnScrollListener.SCROLL_STATE_IDLE;
+    private static final int SMOOTH_SCROLL_AMOUNT_AT_EDGE = 8;
+    private int mSmoothScrollAmountAtEdge = 0;
 
     public ZXDynamicGridView(Context context) {
         super(context);
@@ -78,7 +82,10 @@ public class ZXDynamicGridView extends GridView {
     }
 
     private void init() {
+        super.setOnScrollListener(mScrollListener);
         mOverlapIfSwitchStraightLine = getResources().getDimensionPixelSize(R.dimen.dgv_overlap_if_switch_straight_line);
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        mSmoothScrollAmountAtEdge = (int) (SMOOTH_SCROLL_AMOUNT_AT_EDGE * metrics.density + 0.5f);
     }
 
     @Override
@@ -103,11 +110,13 @@ public class ZXDynamicGridView extends GridView {
                 if (mActivePointerId == INVALID_ID) {
                     break;
                 }
+
                 int pointerIndex = ev.findPointerIndex(mActivePointerId);
-                mLastEventX = (int) ev.getX(pointerIndex);
+
                 mLastEventY = (int) ev.getY(pointerIndex);
-                int deltaX = mLastEventX - mDownX;
+                mLastEventX = (int) ev.getX(pointerIndex);
                 int deltaY = mLastEventY - mDownY;
+                int deltaX = mLastEventX - mDownX;
 
                 if (mCellIsMobile) {
                     mHoverCellCurrentBounds.offsetTo(mHoverCellOriginalBounds.left + deltaX + mTotalOffsetX,
@@ -115,6 +124,8 @@ public class ZXDynamicGridView extends GridView {
                     mHoverCell.setBounds(mHoverCellCurrentBounds);
                     invalidate();
                     handleCellSwitch();
+                    mIsMobileScrolling = false;
+                    handleMobileCellScroll();
                     return false;
                 }
                 break;
@@ -177,6 +188,8 @@ public class ZXDynamicGridView extends GridView {
             }
         }
         if (targetView != null) {
+            Log.i("zhaoxin","targetView != null");
+
             final int originalPosition = getPositionForView(mMobileView);
             final int targetPosition = getPositionForView(targetView);
             final IZXDynamicGridViewAdapter izxDynamicGridViewAdapter = getAdapterInterface();
@@ -336,6 +349,8 @@ public class ZXDynamicGridView extends GridView {
             mMobileItemId = getAdapter().getItemId(position);
             mHoverCell = getAndAddHoverView(selectedView);
             selectedView.setVisibility(View.INVISIBLE);
+            if (isPostHoneycomb())
+                selectedView.setVisibility(View.INVISIBLE);
             mCellIsMobile = true;
             updateNeighborViewsForId(mMobileItemId);
         }
@@ -569,5 +584,101 @@ public class ZXDynamicGridView extends GridView {
         }
     }
 
+    private void handleMobileCellScroll() {
+        mIsMobileScrolling = handleMobileCellScroll(mHoverCellCurrentBounds);
+    }
 
+    private boolean handleMobileCellScroll(Rect rect) {
+        //滚动条的长度
+        int extent = computeVerticalScrollExtent();
+        //上下滚动的范围
+        int range = computeVerticalScrollRange();
+        //滚动的偏移量
+        int offset = computeVerticalScrollOffset();
+
+        int top = rect.top;
+        int hoverHeight = rect.height();
+
+        int height = getHeight();
+
+        if (top < 0 && offset > 0) {
+            smoothScrollBy(-mSmoothScrollAmountAtEdge, 0);
+            return true;
+        }
+
+        if (top + hoverHeight > height && (offset + extent < range)) {
+            smoothScrollBy(mSmoothScrollAmountAtEdge, 0);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 该listener用来处理当cell滑动到边界引起滚动时的Item交换
+     */
+    private OnScrollListener mScrollListener = new OnScrollListener() {
+
+        private int mPreviousFirstVisibleItem = -1;
+        private int mPreviousVisibleItemCount = -1;
+        private int mCurrentFirstVisibleItem;
+        private int mCurrentVisibleItemCount;
+        private int mCurrentScrollState;
+
+        @Override
+        public void onScrollStateChanged(AbsListView view, int scrollState) {
+            mCurrentScrollState = scrollState;
+            mScrollState = scrollState;
+            isScrollCompleted();
+        }
+
+        private void isScrollCompleted() {
+            if (mCurrentVisibleItemCount > 0 && mCurrentScrollState == SCROLL_STATE_IDLE) {
+                if (mCellIsMobile && mIsMobileScrolling) {
+                    handleMobileCellScroll();
+                } else if (mIsWaitingForScrollFinish) {
+                    touchEventsEnded();
+                }
+            }
+        }
+
+        @Override
+        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+
+            mCurrentFirstVisibleItem = firstVisibleItem;
+            mCurrentVisibleItemCount = visibleItemCount;
+
+            mPreviousFirstVisibleItem = (mPreviousFirstVisibleItem == -1) ? mCurrentFirstVisibleItem
+                    : mPreviousFirstVisibleItem;
+            mPreviousVisibleItemCount = (mPreviousVisibleItemCount == -1) ? mCurrentVisibleItemCount
+                    : mPreviousVisibleItemCount;
+
+            checkAndHandleFirstVisibleCellChange();
+            checkAndHandleLastVisibleCellChange();
+        }
+
+        //因为滑动时gridview的position什么的都变了，所以需要重新调用updateNeighborViewsForId方法
+        public void checkAndHandleFirstVisibleCellChange() {
+            if (mCurrentFirstVisibleItem != mPreviousFirstVisibleItem) {
+                if (mCellIsMobile && mMobileItemId != INVALID_ID) {
+                    updateNeighborViewsForId(mMobileItemId);
+                    handleCellSwitch();
+                }
+            }
+        }
+
+        public void checkAndHandleLastVisibleCellChange() {
+            int currentLastVisibleItem = mCurrentFirstVisibleItem + mCurrentVisibleItemCount;
+            int previousLastVisibleItem = mPreviousFirstVisibleItem + mPreviousVisibleItemCount;
+            if (currentLastVisibleItem != previousLastVisibleItem) {
+                if (mCellIsMobile && mMobileItemId != INVALID_ID) {
+                    updateNeighborViewsForId(mMobileItemId);
+                    handleCellSwitch();
+                }
+            }
+        }
+    };
+
+    private boolean isPostHoneycomb() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB;
+    }
 }

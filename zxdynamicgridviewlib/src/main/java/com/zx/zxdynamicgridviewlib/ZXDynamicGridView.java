@@ -636,7 +636,6 @@ public class ZXDynamicGridView extends GridView {
 
             mCurrentFirstVisibleItem = firstVisibleItem;
             mCurrentVisibleItemCount = visibleItemCount;
-
             mPreviousFirstVisibleItem = (mPreviousFirstVisibleItem == -1) ? mCurrentFirstVisibleItem
                     : mPreviousFirstVisibleItem;
             mPreviousVisibleItemCount = (mPreviousVisibleItemCount == -1) ? mCurrentVisibleItemCount
@@ -652,6 +651,7 @@ public class ZXDynamicGridView extends GridView {
         //因为滑动时gridview的position什么的都变了，所以需要重新调用updateNeighborViewsForId方法
         public void checkAndHandleFirstVisibleCellChange() {
             if (mCurrentFirstVisibleItem != mPreviousFirstVisibleItem) {
+                //第一个可见的item的位置不等，说明已经滑动了，则需要重新更新idList和交换位置
                 if (mCellIsMobile && mMobileItemId != INVALID_ID) {
                     updateNeighborViewsForId(mMobileItemId);
                     handleCellSwitch();

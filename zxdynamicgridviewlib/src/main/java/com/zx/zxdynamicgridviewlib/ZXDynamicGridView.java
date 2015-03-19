@@ -3,7 +3,6 @@ package com.zx.zxdynamicgridviewlib;
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.animation.PropertyValuesHolder;
 import android.animation.TypeEvaluator;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
@@ -15,16 +14,12 @@ import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.support.v4.view.MotionEventCompat;
-import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.Animation;
-import android.view.animation.TranslateAnimation;
 import android.widget.AbsListView;
 import android.widget.GridView;
 
@@ -42,7 +37,6 @@ public class ZXDynamicGridView extends GridView {
     private BitmapDrawable mHoverCell;
     private Rect mHoverCellCurrentBounds;
     private Rect mHoverCellOriginalBounds;
-    private boolean isInEditMode = false;
     private static final int MOVE_DURATION = 300;
     private int mDownX;
     private int mDownY;
@@ -188,8 +182,6 @@ public class ZXDynamicGridView extends GridView {
             }
         }
         if (targetView != null) {
-            Log.i("zhaoxin","targetView != null");
-
             final int originalPosition = getPositionForView(mMobileView);
             final int targetPosition = getPositionForView(targetView);
             final IZXDynamicGridViewAdapter izxDynamicGridViewAdapter = getAdapterInterface();
@@ -321,7 +313,6 @@ public class ZXDynamicGridView extends GridView {
         mCellIsMobile = false;
         mIsMobileScrolling = false;
         mActivePointerId = INVALID_ID;
-        isInEditMode = false;
 
     }
 
@@ -407,7 +398,6 @@ public class ZXDynamicGridView extends GridView {
         if (position != -1) {
             startDragAtPosition(position);
         }
-        isInEditMode = true;
     }
 
 
@@ -654,6 +644,9 @@ public class ZXDynamicGridView extends GridView {
 
             checkAndHandleFirstVisibleCellChange();
             checkAndHandleLastVisibleCellChange();
+
+            mPreviousFirstVisibleItem = mCurrentFirstVisibleItem;
+            mPreviousVisibleItemCount = mCurrentVisibleItemCount;
         }
 
         //因为滑动时gridview的position什么的都变了，所以需要重新调用updateNeighborViewsForId方法

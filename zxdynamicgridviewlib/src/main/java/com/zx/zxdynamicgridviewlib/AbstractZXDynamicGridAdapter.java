@@ -14,6 +14,9 @@ public abstract class AbstractZXDynamicGridAdapter<T> extends BaseAdapter implem
 
     public static final int INVALID_ID = -1;
     private int nextStableId = 0;
+    /**
+     * 这里的T如果有重复的话，那么就不能正常拖拽了(重要)
+     */
     private HashMap<T, Integer> mIdMap = new HashMap<>();
 
     /**

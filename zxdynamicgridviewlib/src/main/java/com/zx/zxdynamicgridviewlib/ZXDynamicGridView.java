@@ -196,7 +196,16 @@ public class ZXDynamicGridView extends GridView {
             mDownY = mLastEventY;
             mDownX = mLastEventX;
 
-            SwitchCellAnimator switchCellAnimator = new LSwitchCellAnimator(deltaX, deltaY);
+            SwitchCellAnimator switchCellAnimator;
+
+            if (isPostHoneycomb() && isPreLollipop()) {
+                switchCellAnimator = new KitKatSwitchCellAnimator(deltaX, deltaY);
+            } else if (isPreLollipop()) {
+                switchCellAnimator = new PreHoneycombCellAnimator(deltaX, deltaY);
+            } else {
+                switchCellAnimator = new LSwitchCellAnimator(deltaX, deltaY);
+            }
+
             updateNeighborViewsForId(mMobileItemId);
             switchCellAnimator.animateSwitchCell(originalPosition, targetPosition);
 
@@ -574,6 +583,67 @@ public class ZXDynamicGridView extends GridView {
         }
     }
 
+    private class KitKatSwitchCellAnimator implements SwitchCellAnimator {
+
+        private int mDeltaX;
+        private int mDeltaY;
+
+        private KitKatSwitchCellAnimator(int mDeltaX, int mDeltaY) {
+            this.mDeltaX = mDeltaX;
+            this.mDeltaY = mDeltaY;
+        }
+
+        @Override
+        public void animateSwitchCell(int originalPosition, int targetPosition) {
+            getViewTreeObserver().addOnPreDrawListener(new AnimateSwitchViewOnPreDrawListener(originalPosition, targetPosition, mMobileView));
+            mMobileView = getViewForId(mMobileItemId);
+        }
+
+        private class AnimateSwitchViewOnPreDrawListener implements ViewTreeObserver.OnPreDrawListener {
+
+            private final int mOriginalPosition;
+            private final int mTargetPosition;
+            private final View mPreviousMobileView;
+
+            AnimateSwitchViewOnPreDrawListener(final int originalPosition, final int targetPosition, final View previousMobileView) {
+                mOriginalPosition = originalPosition;
+                mTargetPosition = targetPosition;
+                mPreviousMobileView = previousMobileView;
+            }
+
+            @Override
+            public boolean onPreDraw() {
+                getViewTreeObserver().removeOnPreDrawListener(this);
+                mTotalOffsetY += mDeltaY;
+                mTotalOffsetX += mDeltaX;
+                animateReorder(mOriginalPosition, mTargetPosition);
+                mPreviousMobileView.setVisibility(View.VISIBLE);
+                if (mMobileView != null) {
+                    mMobileView.setVisibility(View.INVISIBLE);
+                }
+                return true;
+            }
+        }
+
+    }
+
+    private class PreHoneycombCellAnimator implements SwitchCellAnimator {
+
+        private int mDeltaX;
+        private int mDeltaY;
+
+        private PreHoneycombCellAnimator(int mDeltaX, int mDeltaY) {
+            this.mDeltaX = mDeltaX;
+            this.mDeltaY = mDeltaY;
+        }
+
+        @Override
+        public void animateSwitchCell(int originalPosition, int targetPosition) {
+            mTotalOffsetY += mDeltaY;
+            mTotalOffsetX += mDeltaX;
+        }
+    }
+
     private void handleMobileCellScroll() {
         mIsMobileScrolling = handleMobileCellScroll(mHoverCellCurrentBounds);
     }
@@ -673,5 +743,10 @@ public class ZXDynamicGridView extends GridView {
 
     private boolean isPostHoneycomb() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB;
+    }
+
+
+    public static boolean isPreLollipop() {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP;
     }
 }

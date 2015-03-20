@@ -248,6 +248,7 @@ public class ZXDynamicGridView extends GridView {
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.HONEYCOMB) {
                 animateBounds(mobileView);
             } else {
+                mHoverCellCurrentBounds.setEmpty();
                 mHoverCell.setBounds(mHoverCellCurrentBounds);
                 invalidate();
                 reset(mobileView);
@@ -639,9 +640,27 @@ public class ZXDynamicGridView extends GridView {
 
         @Override
         public void animateSwitchCell(int originalPosition, int targetPosition) {
-            mTotalOffsetY += mDeltaY;
-            mTotalOffsetX += mDeltaX;
+            getViewTreeObserver().addOnPreDrawListener(new AnimateSwitchViewOnPreDrawListener(mMobileView));
         }
+
+        private class AnimateSwitchViewOnPreDrawListener implements ViewTreeObserver.OnPreDrawListener {
+
+            private View mPreviousMobileView;
+
+            private AnimateSwitchViewOnPreDrawListener(View mPreviousMobileView) {
+                this.mPreviousMobileView = mPreviousMobileView;
+            }
+
+            @Override
+            public boolean onPreDraw() {
+                getViewTreeObserver().removeOnPreDrawListener(this);
+                mTotalOffsetY += mDeltaY;
+                mTotalOffsetX += mDeltaX;
+                mPreviousMobileView.setVisibility(View.VISIBLE);
+                return true;
+            }
+        }
+
     }
 
     private void handleMobileCellScroll() {
